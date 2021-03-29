@@ -6,6 +6,7 @@ import requests
 from vk_api.upload import FilesOpener
 
 from shematok_parse import shematok_parse
+from joyta_parse import joyta_parse
 
 TOKEN = 'd034eacf55b685f35ec2b825304d1e705080c129359983d40ce469629f66c0eb20eaef6833987876315ba'
 
@@ -38,13 +39,13 @@ def main():
             vk = vk_session.get_api()
             sender = vk.users.get(user_id=event.obj.message['from_id'], fields='city')[0]
             text = event.obj.message['text']
+
             if not text:
                 msg = f'Введите название элемента для поиска.'
                 vk.messages.send(user_id=event.obj.message['from_id'],
                                  message=msg,
                                  random_id=random.randint(0, 2 ** 64))
                 continue
-
             if sender['id'] == 229756207:
                 msg = f'Кирилл, ты персонально идёшь нахуй.'
                 vk.messages.send(user_id=event.obj.message['from_id'],
@@ -52,26 +53,36 @@ def main():
                                  random_id=random.randint(0, 2 ** 64))
                 continue
 
-            msg = f'Выполняю поиск...'
+            msg = f'Выполняю поиск на joyta.ru...'
             vk.messages.send(user_id=event.obj.message['from_id'],
                              message=msg,
                              random_id=random.randint(0, 2 ** 64))
+            results = joyta_parse(text)
 
-            results = shematok_parse(text)
+            if not results:
+                msg = f'Выполняю поиск на shematok.ru...'
+                vk.messages.send(user_id=event.obj.message['from_id'],
+                                 message=msg,
+                                 random_id=random.randint(0, 2 ** 64))
+                results = shematok_parse(text)
+
             if not results:
                 msg = f'Ничего не найдено.'
                 vk.messages.send(user_id=event.obj.message['from_id'],
                                  message=msg,
                                  random_id=random.randint(0, 2 ** 64))
             else:
-                album_id = 278726691
-                if results[1][0]:
-                    photo = photo_messages(vk, open(results[0][2], 'rb'), 0)
-                    os.remove(results[0][2])
+                msg = f'Результат поиска\n{results[0]["name"]}\nИсточник: {results[0]["url"]}\n'
+                attachment = ''
+                if results[0]['images']:
+                    photos = []
+                    for image in results[0]['images']:
+                        photos.append(photo_messages(vk, open(image, 'rb'), 0))
+                        os.remove(image)
+                    attachment = ','.join([f'photo-{group_id}_{photo[0]["id"]}' for photo in photos])
+                if results[0]['text']:
+                    msg += '\n' + results[0]['text']
 
-                msg = f'Результат поиска\nИсточник: {results[0][0]}'
-                msg += results[0][1]
-                attachment = [f'photo-{group_id}_{photo[0]["id"]}']
                 vk.messages.send(user_id=event.obj.message['from_id'],
                                  message=msg,
                                  random_id=random.randint(0, 2 ** 64),
