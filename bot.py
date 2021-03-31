@@ -7,6 +7,7 @@ from vk_api.upload import FilesOpener
 
 from shematok_parse import shematok_parse
 from joyta_parse import joyta_parse
+from radiolibrary_parse import radiolibrary_parse
 
 TOKEN = 'd034eacf55b685f35ec2b825304d1e705080c129359983d40ce469629f66c0eb20eaef6833987876315ba'
 
@@ -53,11 +54,17 @@ def main():
                                  random_id=random.randint(0, 2 ** 64))
                 continue
 
-            msg = f'Выполняю поиск на joyta.ru...'
+            msg = f'Выполняю поиск на radiolibrary.ru...'
             vk.messages.send(user_id=event.obj.message['from_id'],
                              message=msg,
                              random_id=random.randint(0, 2 ** 64))
-            results = joyta_parse(text)
+            results = radiolibrary_parse(text)
+
+            # msg = f'Выполняю поиск на joyta.ru...'
+            # vk.messages.send(user_id=event.obj.message['from_id'],
+            #                  message=msg,
+            #                  random_id=random.randint(0, 2 ** 64))
+            # results = joyta_parse(text)
 
             if not results:
                 msg = f'Выполняю поиск на shematok.ru...'
