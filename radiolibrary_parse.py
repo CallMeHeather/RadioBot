@@ -1,13 +1,13 @@
 import requests
 from bs4 import BeautifulSoup
-from PIL import Image
 
 
-def radiolibrary_parse(part_name):
+def radiolibrary_parse(part_name: str):
     all_results = []
 
-    part_name = str(part_name.encode('ANSI')).replace('\\x', '%').upper()[2:-1]
     print(f'Поиск "{part_name}" на radiolibrary.ru...\n')
+    part_name = str(part_name.encode('ANSI')).replace('\\x', '%').upper()[2:-1]
+
     request = f'https://www.radiolibrary.ru/search.php?name={part_name}'
     headers = {
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:45.0) Gecko/20100101 Firefox/45.0',
@@ -24,11 +24,11 @@ def radiolibrary_parse(part_name):
 
     print(f'Найдено {len(results)} результатов.')
     print(*results, sep='\n')
-    print()
+    #print()
 
     for i, result_url in enumerate(results):
-        print(f'Страница {i + 1}: '
-              f'{result_url}')
+        #print(f'Страница {i + 1}: '
+        #      f'{result_url}')
 
         response = requests.get(result_url, headers=headers)
         text = response.content
@@ -48,13 +48,12 @@ def radiolibrary_parse(part_name):
             data = list(map(lambda x: x.replace('</td><td>', ': '), data))
             data = list(map(lambda x: x[x.find('>') + 1:x.find('<', 2)], data))
 
-
         # print(*data, sep='\n')
 
         images = soup.find_all('img')
         images = list(filter(lambda x: 'reference' in str(x), images))
         images = list(map(lambda x: str(x)[str(x).find('src') + 5:-3], images))
-        images = list(map(lambda x: 'https://www.radiolibrary.ru/' + x, images))
+        images = list(map(lambda x: 'https://www.radiolibrary.ru' + x, images))
 
         if images or text:
             all_results.append({'url': None,
@@ -69,17 +68,17 @@ def radiolibrary_parse(part_name):
                     response = requests.get(url, headers=headers)
                     with open(f'radiolibrary_imgs/{name}_img{i + 1}.{url[-3:]}', 'wb') as out_img:
                         out_img.write(response.content)
-                        print(f'Получено изображение {name}_img{i + 1}.{url[-3:]}')
+                        #print(f'Получено изображение {name}_img{i + 1}.{url[-3:]}')
                         all_results[-1]['images'].append(f'radiolibrary_imgs/{name}_img{i + 1}.{url[-3:]}')
+                        out_img.close()
             if text:
                 all_results[-1]['text'] = '\n\n'.join(data)
 
-            print()
-            print('Поиск завершён.\n')
-            return all_results
-        break
+    #print()
+    print('Поиск завершён.\n')
+    return all_results
 
 
 if __name__ == '__main__':
-    part_name = 'кр142ен5'
+    part_name = 'кт3157'
     radiolibrary_parse(part_name)

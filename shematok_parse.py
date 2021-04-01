@@ -38,7 +38,7 @@ def shematok_parse(part_name):
 
     # Страница элемента
     for i, url in enumerate(results):
-        print(f'Страница №{i + 1} - {url}')
+        # print(f'Страница №{i + 1} - {url}')
         headers = {
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:45.0) Gecko/20100101 Firefox/45.0'
         }
@@ -60,7 +60,7 @@ def shematok_parse(part_name):
 
         name = str(soup.find('h1'))
         name = name[name.find('>') + 1:name.find('</')]
-        print(name)
+        # print(name)
 
         article = soup.find('article')
         images = article.find_all('img')
@@ -101,18 +101,15 @@ def shematok_parse(part_name):
 
                     with open(f'shematok_imgs/{name}_img{i + 1}.{url[-3:]}', 'wb') as out_img:
                         out_img.write(response.content)
-                        print(f'Получено изображение {name}_img{i + 1}.{url[-3:]}')
+                        #print(f'Получено изображение {name}_img{i + 1}.{url[-3:]}')
                         all_results[-1]['images'].append(f'shematok_imgs/{name}_img{i + 1}.{url[-3:]}')
 
             if data:
                 all_results[-1]['text'] = '\n\n'.join(data)
 
-            print()
-            print('Поиск завершён.')
-            return all_results
-
-    if not all_results:
-        return None
+    #print()
+    print('Поиск завершён.')
+    return all_results
 
 
 if __name__ == '__main__':
