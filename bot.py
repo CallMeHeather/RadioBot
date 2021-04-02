@@ -8,12 +8,15 @@ from vk_api.upload import FilesOpener
 from shematok_parse import shematok_parse
 from joyta_parse import joyta_parse
 from radiolibrary_parse import radiolibrary_parse
+from eandc_parse import eandc_parse
 
 TOKEN = 'd034eacf55b685f35ec2b825304d1e705080c129359983d40ce469629f66c0eb20eaef6833987876315ba'
 group_id = 203010669
 
 parsers = {1: (1, radiolibrary_parse, 'radiolibrary.ru'),
-           2: (2, shematok_parse, 'shematok.ru')}
+           2: (2, eandc_parse, 'eandc.ru'),
+           # 2: (2, shematok_parse, 'shematok.ru')
+           }
 
 
 def photo_messages(vk, photo, peer_id=0):
@@ -51,8 +54,11 @@ class UserDialog:
                                      Я - радиобот, могу искать характеристики электронных компонентов по их названиям.
                                      На данный момент в базе {len(parsers)} сайтов.
                                      Отправьте название для поиска.
-
-                                     BETA 0.0.0.0.0000001 НИЧЁ НЕ РАБОТАЕТ НОРМАЛЬНО''',
+                                     
+                                     Для более точного и быстрого поиска вводите маркировку вместе с буквенным индексом (Пример: КТ315Г)
+                                     Поиск может занять какое-то время, наберитесь терпения.
+                                     
+                                     BETA 0.0.0.0.2 НИЧЁ НЕ РАБОТАЕТ НОРМАЛЬНО''',
                          random_id=random.randint(0, 2 ** 64))
 
     def reset_search(self):
@@ -65,7 +71,8 @@ class UserDialog:
         _, parser, site_url = parsers.get(self.current_parser)
         vk.messages.send(user_id=self.user_id,
                          message=f'Поиск  "{self.search_text}"  на {site_url}...',
-                         random_id=random.randint(0, 2 ** 64))
+                         random_id=random.randint(0, 2 ** 64),
+                         dont_parse_links=True)
         self.results = parser(self.search_text)
 
         # Если результатов нет, то идёт на другой сайт
@@ -97,12 +104,24 @@ class UserDialog:
                 os.remove(image)
             attachment = ','.join([f'photo-{group_id}_{photo[0]["id"]}' for photo in photos])
         if result['text']:
+
+            # if len(result['text']) > 2048:
+            #     msg, l = ['\n'], 0
+            #     lines = result['text'].split('\n')
+            #     for line in lines:
+            #         if len(msg[-1]) + len(line) > 4000:
+            #             msg.append(line)
+            #         else:
+            #             msg[-1] += f'\n{line}'
+            #
+            # else:
             msg += '\n' + result['text']
 
-        vk.messages.send(user_id=self.user_id,
-                         message=msg,
-                         random_id=random.randint(0, 2 ** 64),
-                         attachment=attachment)
+        #for i, text in enumerate(msg):
+            vk.messages.send(user_id=self.user_id,
+                             message=msg,
+                             random_id=random.randint(0, 2 ** 64),
+                             attachment=attachment)
 
         # Просит ответа у пользователя
         vk.messages.send(user_id=self.user_id,
@@ -167,6 +186,20 @@ class UserDialog:
 
                     if self.results:
                         self.send_result(vk)
+            else:
+                vk.messages.send(user_id=self.user_id,
+                                 message=f'Поиск по запросу  "{self.search_text}"  завершён.',
+                                 random_id=random.randint(0, 2 ** 64))
+                self.reset_search()
+                self.search_text = text
+
+                while not self.parse(vk):
+                    self.current_parser += 1
+                    if self.current_parser > len(parsers):
+                        break
+
+                if self.results:
+                    self.send_result(vk)
 
 
 def main():
