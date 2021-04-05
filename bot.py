@@ -145,9 +145,7 @@ class UserDialog:
                          message=f'1 - Следующий результат\n'
                                  f'2 - Продолжить поиск на другом сайте\n'
                                  f'3 - Закончить поиск по запросу  "{self.search_text}"',
-                         random_id=random.randint(0, 2 ** 64),
-                         keyboard=str(keyboard["keyboard"]).
-                         replace('True', 'true').replace('False', 'false').replace("'", '"'))
+                         random_id=random.randint(0, 2 ** 64))
 
         self.state = 'wait_for_response'
         return True
