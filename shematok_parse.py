@@ -7,7 +7,7 @@ def shematok_parse(part_name):
     all_results = []
 
     # Все результаты поиска
-    print(f'Поиск "{part_name}" на shematok.ru...\n')
+    print(f'Поиск "{part_name}" на shematok.ru...')
 
     url = f'https://shematok.ru/?s={part_name}'
     headers = {
@@ -99,10 +99,10 @@ def shematok_parse(part_name):
                     response = requests.get(url)
                     # print(response)
 
-                    with open(f'shematok_imgs/{name}_img{i + 1}.{url[-3:]}', 'wb') as out_img:
+                    with open(f'data/images/shematok_imgs/{name}_img{i + 1}.{url[-3:]}', 'wb') as out_img:
                         out_img.write(response.content)
                         #print(f'Получено изображение {name}_img{i + 1}.{url[-3:]}')
-                        all_results[-1]['images'].append(f'shematok_imgs/{name}_img{i + 1}.{url[-3:]}')
+                        all_results[-1]['images'].append(f'data/images/shematok_imgs/{name}_img{i + 1}.{url[-3:]}')
 
             if data:
                 all_results[-1]['text'] = '\n\n'.join(data)

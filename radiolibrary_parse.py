@@ -1,11 +1,13 @@
 import requests
 from bs4 import BeautifulSoup
 
+RESULTS_COUNT = 5
 
-def radiolibrary_parse(part_name: str):
+
+def radiolibrary_parse(part_name: str, results_count: int = RESULTS_COUNT):
     all_results = []
 
-    print(f'Поиск "{part_name}" на radiolibrary.ru...\n')
+    print(f'Поиск "{part_name}" на radiolibrary.ru...')
     part_name = str(part_name.encode('ANSI')).replace('\\x', '%').upper()[2:-1]
 
     request = f'https://www.radiolibrary.ru/search.php?name={part_name}'
@@ -23,12 +25,12 @@ def radiolibrary_parse(part_name: str):
     results = list(map(lambda x: 'https://www.radiolibrary.ru/' + x, results))
 
     print(f'Найдено {len(results)} результатов.')
-    print(*results, sep='\n')
+    #print(*results, sep='\n')
     #print()
 
-    for i, result_url in enumerate(results):
-        #print(f'Страница {i + 1}: '
-        #      f'{result_url}')
+    for i, result_url in enumerate(results[:results_count]):
+        print(f'Страница {i + 1}: '
+              f'{result_url}')
 
         response = requests.get(result_url, headers=headers)
         text = response.content
@@ -66,10 +68,10 @@ def radiolibrary_parse(part_name: str):
             if images:
                 for i, url in enumerate(images):
                     response = requests.get(url, headers=headers)
-                    with open(f'radiolibrary_imgs/{name}_img{i + 1}.{url[-3:]}', 'wb') as out_img:
+                    with open(f'data/images/radiolibrary_imgs/{name}_img{i + 1}.{url[-3:]}', 'wb') as out_img:
                         out_img.write(response.content)
                         #print(f'Получено изображение {name}_img{i + 1}.{url[-3:]}')
-                        all_results[-1]['images'].append(f'radiolibrary_imgs/{name}_img{i + 1}.{url[-3:]}')
+                        all_results[-1]['images'].append(f'data/images/radiolibrary_imgs/{name}_img{i + 1}.{url[-3:]}')
                         out_img.close()
             if text:
                 all_results[-1]['text'] = '\n\n'.join(data)

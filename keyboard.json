@@ -1,0 +1,29 @@
+{
+  "keyboard": {
+    "one_time": true,
+    "buttons": [
+      {
+        "action": {
+          "type": "text",
+          "label": "Следующий результат"
+        },
+        "color": "secondary"
+      },
+      {
+        "action": {
+          "type": "text",
+          "label": "Искать на другом сайте"
+        },
+        "color": "secondary"
+      },
+      {
+        "action": {
+          "type": "text",
+          "label": "Закончить поиск"
+        },
+        "color": "secondary"
+      }
+    ],
+    "inline": false
+  }
+}

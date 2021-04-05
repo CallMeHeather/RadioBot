@@ -7,7 +7,7 @@ RESULTS_COUNT = 5
 def eandc_parse(part_name: str, results_count: int = RESULTS_COUNT):
     all_results = []
 
-    print(f'Поиск "{part_name}" на eandc.ru...\n')
+    print(f'Поиск "{part_name}" на eandc.ru...')
     part_name = str(part_name.encode('ANSI')).replace('\\x', '%').upper()[2:-1]
 
     request = f'https://eandc.ru/catalog/?q={part_name}'
@@ -18,12 +18,16 @@ def eandc_parse(part_name: str, results_count: int = RESULTS_COUNT):
 
     text = response.content
     soup = BeautifulSoup(text, features='lxml')
+
+    if soup.find(text='Сожалеем, но ничего не найдено.'):
+        print('Найдено 0 результатов.\nПоиск завершён.')
+        return []
+
     results = soup.find_all('a', class_='desc_name')
     results = list(map(lambda x: str(x)[str(x).find('href') + 7:], results))
     results = list(map(lambda x: str(x)[:str(x).find('"')], results))
 
     print(f'Найдено {len(results)} результатов.')
-    print()
 
     for i, result_url in enumerate(results[:results_count]):
         result_url = f'https://eandc.ru/{result_url}'
@@ -58,10 +62,10 @@ def eandc_parse(part_name: str, results_count: int = RESULTS_COUNT):
 
             if image:
                 response = requests.get(f'https://eandc.ru/{image}', headers=headers)
-                with open(f'eandc_imgs/{name}_img.{image[-3:]}', 'wb') as out_img:
+                with open(f'data/images/eandc_imgs/{name}_img.{image[-3:]}', 'wb') as out_img:
                     out_img.write(response.content)
                     # print(f'Получено изображение {name}_img{i + 1}.{url[-3:]}')
-                    all_results[-1]['images'].append(f'eandc_imgs/{name}_img.{image[-3:]}')
+                    all_results[-1]['images'].append(f'data/images/eandc_imgs/{name}_img.{image[-3:]}')
                     out_img.close()
             if text:
                 all_results[-1]['text'] = text

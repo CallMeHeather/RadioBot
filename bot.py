@@ -4,6 +4,7 @@ import random
 import os
 import requests
 from vk_api.upload import FilesOpener
+import json
 
 from shematok_parse import shematok_parse
 from joyta_parse import joyta_parse
@@ -13,20 +14,34 @@ from eandc_parse import eandc_parse
 TOKEN = 'd034eacf55b685f35ec2b825304d1e705080c129359983d40ce469629f66c0eb20eaef6833987876315ba'
 group_id = 203010669
 
-parsers = {1: (1, radiolibrary_parse, 'radiolibrary.ru'),
-           2: (2, eandc_parse, 'eandc.ru'),
+parsers = {2: (2, radiolibrary_parse, 'radiolibrary.ru'),
+           1: (1, eandc_parse, 'eandc.ru'),
            # 2: (2, shematok_parse, 'shematok.ru')
            }
 
+keyboard = {
+    "keyboard": {
+        "one_time": True,
+        "buttons":
+            [
+                {
+                    "action":
+                        {
+                            "type": "text",
+                            "label": "Red",
+                            "payload": "1",
+                        },
+                    "color": "negative"
+                }
+            ],
+        "inline": False
+    }
+}
+keyboard = str(keyboard["keyboard"]). \
+    replace('True', 'true').replace('False', 'false').replace("'", '"').replace(' ', '')
+
 
 def photo_messages(vk, photo, peer_id=0):
-    """ Загрузка изображений в сообщения
-    :param photos: путь к изображению(ям) или file-like объект(ы)
-    :type photos: str or list
-    :param peer_id: peer_id беседы
-    :type peer_id: int
-    """
-
     try:
         url = vk.photos.getMessagesUploadServer(peer_id=peer_id)['upload_url']
 
@@ -50,38 +65,51 @@ class UserDialog:
         self.state = 'wait_for_request'  # 'wait_for_response'
 
         vk.messages.send(user_id=self.user_id,
-                         message=f'''Привет.
-                                     Я - радиобот, могу искать характеристики электронных компонентов по их названиям.
-                                     На данный момент в базе {len(parsers)} сайтов.
-                                     Отправьте название для поиска.
-                                     
-                                     Для более точного и быстрого поиска вводите маркировку вместе с буквенным индексом (Пример: КТ315Г)
-                                     Поиск может занять какое-то время, наберитесь терпения.
-                                     
-                                     BETA 0.0.0.0.2 НИЧЁ НЕ РАБОТАЕТ НОРМАЛЬНО''',
+                         message=f'Привет.\n'
+                                 f'Я - радиобот, могу искать характеристики электронных компонентов по их названиям.\n'
+                                 f'На данный момент в базе {len(parsers)} сайтов.\n'
+                                 f'Отправьте название для поиска.\n'
+                                 f'\n'
+                                 f'Для более точного и быстрого поиска вводите маркировку вместе с буквенным индексом (Пример: КТ315Г)\n'
+                                 f'Поиск может занять какое-то время, наберитесь терпения.\n'
+                                 f'Если результаты поиска некорректны, попробуте поиск на другом сайте.\n'
+                                 f'\n'
+                                 f'BETA 0.0.0.2 НИЧЁ НЕ РАБОТАЕТ НОРМАЛЬНО',
                          random_id=random.randint(0, 2 ** 64))
 
-    def reset_search(self):
+    def reset_search(self, vk):
         self.state = 'wait_for_request'
         self.current_parser = 1
         self.current_result = 0
+        self.results = []
+        vk.messages.send(user_id=self.user_id,
+                         message=f'Поиск по запросу  "{self.search_text}"  завершён.\n'
+                                 f'Введите название элемента, чтобы начать поиск.',
+                         random_id=random.randint(0, 2 ** 64))
 
     def parse(self, vk):
-        self.results = []
-        _, parser, site_url = parsers.get(self.current_parser)
-        vk.messages.send(user_id=self.user_id,
-                         message=f'Поиск  "{self.search_text}"  на {site_url}...',
-                         random_id=random.randint(0, 2 ** 64),
-                         dont_parse_links=True)
-        self.results = parser(self.search_text)
-
-        # Если результатов нет, то идёт на другой сайт
-        if not self.results:
+        try:
+            self.results = []
+            _, parser, site_url = parsers.get(self.current_parser)
             vk.messages.send(user_id=self.user_id,
-                             message=f'''На сайте ничего не найдено.''',
+                             message=f'Поиск  "{self.search_text}"  на {site_url}...',
+                             random_id=random.randint(0, 2 ** 64),
+                             dont_parse_links=True)
+            self.results = parser(self.search_text)
+
+            # Если результатов нет, то идёт на другой сайт
+            if not self.results:
+                vk.messages.send(user_id=self.user_id,
+                                 message=f'''На сайте ничего не найдено.''',
+                                 random_id=random.randint(0, 2 ** 64))
+                return False
+        except Exception as exc:
+            vk.messages.send(user_id=self.user_id,
+                             message=f'{exc}\n'
+                                     f'\n'
+                                     f'Произошла непредвиденная ошибка при поиске.\n',
                              random_id=random.randint(0, 2 ** 64))
             return False
-
         return True
 
     def send_result(self, vk):
@@ -90,8 +118,8 @@ class UserDialog:
         else:
             return False
 
-        msg = f'''Результат поиска: {result["name"]}
-                  Источник: {result["url"]}\n'''
+        msg = f'Результат поиска: {result["name"]}\n' \
+              f'Источник: {result["url"]}\n'
         attachment = ''
         if result['images']:
             photos = []
@@ -104,20 +132,9 @@ class UserDialog:
                 os.remove(image)
             attachment = ','.join([f'photo-{group_id}_{photo[0]["id"]}' for photo in photos])
         if result['text']:
-
-            # if len(result['text']) > 2048:
-            #     msg, l = ['\n'], 0
-            #     lines = result['text'].split('\n')
-            #     for line in lines:
-            #         if len(msg[-1]) + len(line) > 4000:
-            #             msg.append(line)
-            #         else:
-            #             msg[-1] += f'\n{line}'
-            #
-            # else:
             msg += '\n' + result['text']
 
-        #for i, text in enumerate(msg):
+            # for i, text in enumerate(msg):
             vk.messages.send(user_id=self.user_id,
                              message=msg,
                              random_id=random.randint(0, 2 ** 64),
@@ -125,27 +142,32 @@ class UserDialog:
 
         # Просит ответа у пользователя
         vk.messages.send(user_id=self.user_id,
-                         message=f'''1 - Следующий результат
-                                     2 - Продолжить поиск на другом сайте
-                                     3 - Закончить поиск по запросу  "{self.search_text}"''',
-                         random_id=random.randint(0, 2 ** 64))
+                         message=f'1 - Следующий результат\n'
+                                 f'2 - Продолжить поиск на другом сайте\n'
+                                 f'3 - Закончить поиск по запросу  "{self.search_text}"',
+                         random_id=random.randint(0, 2 ** 64),
+                         keyboard=str(keyboard["keyboard"]).
+                         replace('True', 'true').replace('False', 'false').replace("'", '"'))
+
         self.state = 'wait_for_response'
         return True
 
-    def handle_message(self, text, vk):
+    def handle_message(self, message, vk):
+        text = message['text']
+
         # Пустое сообщение
         if not text:
             vk.messages.send(user_id=self.user_id,
                              message='Отправьте мне корректное название радиоэлемента для поиска.',
                              random_id=random.randint(0, 2 ** 64))
             return None
-
         if self.state == 'wait_for_request':
             self.search_text = text
 
             while not self.parse(vk):
                 self.current_parser += 1
                 if self.current_parser > len(parsers):
+                    self.reset_search(vk)
                     break
 
             if self.results:
@@ -153,44 +175,36 @@ class UserDialog:
 
         elif self.state == 'wait_for_response':
             if text == '3':
-                vk.messages.send(user_id=self.user_id,
-                                 message=f'''Поиск по запросу  "{self.search_text}"  завершён.
-                                             Введите название элемента, чтобы начать поиск.''',
-                                 random_id=random.randint(0, 2 ** 64))
-                self.reset_search()
+
+                self.reset_search(vk)
             elif text == '1':
                 a = self.send_result(vk)
                 if not a:
                     vk.messages.send(user_id=self.user_id,
-                                     message=f'''Результаты кончились.
-                                                 2 - Продолжить поиск на другом сайте
-                                                 3 - Закончить поиск по запросу  "{self.search_text}"''',
+                                     message=f'Результаты кончились.\n'
+                                             f'2 - Продолжить поиск на другом сайте\n'
+                                             f'3 - Закончить поиск по запросу  "{self.search_text}"',
                                      random_id=random.randint(0, 2 ** 64))
             elif text == '2':
                 self.current_parser += 1
                 if self.current_parser > len(parsers):
                     vk.messages.send(user_id=self.user_id,
-                                     message=f'''Сайты кончились.
-                                                 Поиск по запросу  "{self.search_text}"  завершён.''',
+                                     message=f'Сайты кончились.\n',
                                      random_id=random.randint(0, 2 ** 64))
-                    self.reset_search()
+                    self.reset_search(vk)
                 else:
                     while not self.parse(vk):
                         self.current_parser += 1
                         if self.current_parser > len(parsers):
                             vk.messages.send(user_id=self.user_id,
-                                             message=f'''Сайты кончились.
-                                                         Поиск по запросу  "{self.search_text}"  завершён.''',
+                                             message=f'Сайты кончились.\n',
                                              random_id=random.randint(0, 2 ** 64))
-                            self.reset_search()
+                            self.reset_search(vk)
 
                     if self.results:
                         self.send_result(vk)
             else:
-                vk.messages.send(user_id=self.user_id,
-                                 message=f'Поиск по запросу  "{self.search_text}"  завершён.',
-                                 random_id=random.randint(0, 2 ** 64))
-                self.reset_search()
+                self.reset_search(vk)
                 self.search_text = text
 
                 while not self.parse(vk):
@@ -211,71 +225,12 @@ def main():
         if event.type == VkBotEventType.MESSAGE_NEW:
             vk = vk_session.get_api()
             sender = vk.users.get(user_id=event.obj.message['from_id'], fields='city')[0]
-            text = event.obj.message['text']
+            message = event.obj.message
 
             if sender['id'] not in dialogs:
                 dialogs[sender['id']] = UserDialog(sender['id'], vk)
             else:
-                dialogs[sender['id']].handle_message(text, vk)
-
-            # if not text:
-            #     msg = f'Введите название элемента для поиска.'
-            #     vk.messages.send(user_id=event.obj.message['from_id'],
-            #                      message=msg,
-            #                      random_id=random.randint(0, 2 ** 64))
-            #     continue
-            # if sender['id'] == 229756207:
-            #     msg = f'Кирилл, ты персонально идёшь нахуй.'
-            #     vk.messages.send(user_id=event.obj.message['from_id'],
-            #                      message=msg,
-            #                      random_id=random.randint(0, 2 ** 64))
-            #     continue
-
-            # msg = f'Выполняю поиск на radiolibrary.ru...'
-            # vk.messages.send(user_id=event.obj.message['from_id'],
-            #                  message=msg,
-            #                  random_id=random.randint(0, 2 ** 64))
-            # results = radiolibrary_parse(text)
-
-            # msg = f'Выполняю поиск на joyta.ru...'
-            # vk.messages.send(user_id=event.obj.message['from_id'],
-            #                  message=msg,
-            #                  random_id=random.randint(0, 2 ** 64))
-            # results = joyta_parse(text)
-
-            # if not results:
-            #     msg = f'Выполняю поиск на shematok.ru...'
-            #     vk.messages.send(user_id=event.obj.message['from_id'],
-            #                      message=msg,
-            #                      random_id=random.randint(0, 2 ** 64))
-            #     results = shematok_parse(text)
-            #
-            # if not results:
-            #     msg = f'Ничего не найдено.'
-            #     vk.messages.send(user_id=event.obj.message['from_id'],
-            #                      message=msg,
-            #                      random_id=random.randint(0, 2 ** 64))
-            #
-            # else:
-            #     msg = f'Результат поиска\n{results[0]["name"]}\nИсточник: {results[0]["url"]}\n'
-            #     attachment = ''
-            #     if results[0]['images']:
-            #         photos = []
-            #         for image in results[0]['images']:
-            #             with open(image, 'rb') as img:
-            #                 a = photo_messages(vk, img, 0)
-            #                 if a:
-            #                     photos.append(a)
-            #                 img.close()
-            #             os.remove(image)
-            #         attachment = ','.join([f'photo-{group_id}_{photo[0]["id"]}' for photo in photos])
-            #     if results[0]['text']:
-            #         msg += '\n' + results[0]['text']
-            #
-            #     vk.messages.send(user_id=event.obj.message['from_id'],
-            #                      message=msg,
-            #                      random_id=random.randint(0, 2 ** 64),
-            #                      attachment=attachment)
+                dialogs[sender['id']].handle_message(message, vk)
 
 
 if __name__ == '__main__':
