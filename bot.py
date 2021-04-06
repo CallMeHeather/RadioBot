@@ -4,7 +4,6 @@ import random
 import os
 import requests
 from vk_api.upload import FilesOpener
-import json
 
 from shematok_parse import shematok_parse
 from joyta_parse import joyta_parse
@@ -14,31 +13,58 @@ from eandc_parse import eandc_parse
 TOKEN = 'd034eacf55b685f35ec2b825304d1e705080c129359983d40ce469629f66c0eb20eaef6833987876315ba'
 group_id = 203010669
 
-parsers = {2: (2, radiolibrary_parse, 'radiolibrary.ru'),
-           1: (1, eandc_parse, 'eandc.ru'),
-           # 2: (2, shematok_parse, 'shematok.ru')
-           }
+parsers = {
+    2: (2, radiolibrary_parse, 'radiolibrary.ru'),
+    1: (1, eandc_parse, 'eandc.ru'),
+    # 2: (2, shematok_parse, 'shematok.ru')
+}
 
 keyboard = {
     "keyboard": {
         "one_time": True,
         "buttons":
             [
-                {
+                [{
                     "action":
                         {
                             "type": "text",
-                            "label": "Red",
-                            "payload": "1",
+                            "label": "Следующий результат",
+                            "payload": "1"
+                        },
+                    "color": "primary"
+
+                }],
+                [{
+                    "action":
+                        {
+                            "type": "text",
+                            "label": "Поиск на другом сайте",
+                            "payload": "2"
+                        },
+                    "color": "primary"
+                }],
+                [{
+                    "action":
+                        {
+                            "type": "text",
+                            "label": "Закончить поиск",
+                            "payload": "3"
                         },
                     "color": "negative"
-                }
+                }]
+
             ],
         "inline": False
     }
 }
-keyboard = str(keyboard["keyboard"]). \
-    replace('True', 'true').replace('False', 'false').replace("'", '"').replace(' ', '')
+
+
+def clear_folders():
+    os.chdir(os.path.join('data', 'images'))
+    for folder in os.listdir(os.getcwd()):
+        for file in os.listdir(os.path.join(os.getcwd(), folder)):
+            os.remove(os.path.join(os.getcwd(), folder, file))
+    os.chdir('..')
 
 
 def photo_messages(vk, photo, peer_id=0):
@@ -74,7 +100,7 @@ class UserDialog:
                                  f'Поиск может занять какое-то время, наберитесь терпения.\n'
                                  f'Если результаты поиска некорректны, попробуте поиск на другом сайте.\n'
                                  f'\n'
-                                 f'BETA 0.0.0.2 НИЧЁ НЕ РАБОТАЕТ НОРМАЛЬНО',
+                                 f'BETA 0.0.3 НИЧЁ НЕ РАБОТАЕТ НОРМАЛЬНО',
                          random_id=random.randint(0, 2 ** 64))
 
     def reset_search(self, vk):
@@ -141,14 +167,37 @@ class UserDialog:
                              attachment=attachment)
 
         # Просит ответа у пользователя
+        kbd = eval(str(keyboard.get("keyboard")))
+        kbd["buttons"][2][0]["action"]["label"] = f'Закончить поиск по запросу {self.search_text}'
+        if self.current_parser + 1 > len(parsers):
+            kbd["buttons"].pop(1)
+        if not self.results:
+            kbd["buttons"].pop(0)
+
+        kbd = str(kbd).replace('True', 'true').replace('False', 'false').replace("'", '"')
+        print(kbd)
         vk.messages.send(user_id=self.user_id,
                          message=f'1 - Следующий результат\n'
                                  f'2 - Продолжить поиск на другом сайте\n'
                                  f'3 - Закончить поиск по запросу  "{self.search_text}"',
-                         random_id=random.randint(0, 2 ** 64))
+                         random_id=random.randint(0, 2 ** 64),
+                         keyboard=kbd)
 
         self.state = 'wait_for_response'
         return True
+
+    def first_parse(self, vk):
+        while not self.parse(vk):
+            self.current_parser += 1
+            if self.current_parser > len(parsers):
+                vk.messages.send(user_id=self.user_id,
+                                 message=f'Сайты кончились.\n',
+                                 random_id=random.randint(0, 2 ** 64))
+                self.reset_search(vk)
+                break
+
+        if self.results:
+            self.send_result(vk)
 
     def handle_message(self, message, vk):
         text = message['text']
@@ -172,46 +221,31 @@ class UserDialog:
                 self.send_result(vk)
 
         elif self.state == 'wait_for_response':
-            if text == '3':
-
-                self.reset_search(vk)
-            elif text == '1':
-                a = self.send_result(vk)
-                if not a:
-                    vk.messages.send(user_id=self.user_id,
-                                     message=f'Результаты кончились.\n'
-                                             f'2 - Продолжить поиск на другом сайте\n'
-                                             f'3 - Закончить поиск по запросу  "{self.search_text}"',
-                                     random_id=random.randint(0, 2 ** 64))
-            elif text == '2':
-                self.current_parser += 1
-                if self.current_parser > len(parsers):
-                    vk.messages.send(user_id=self.user_id,
-                                     message=f'Сайты кончились.\n',
-                                     random_id=random.randint(0, 2 ** 64))
+            if "payload" in message.keys():
+                payload = message["payload"]
+                if payload == '3':
                     self.reset_search(vk)
-                else:
-                    while not self.parse(vk):
-                        self.current_parser += 1
-                        if self.current_parser > len(parsers):
-                            vk.messages.send(user_id=self.user_id,
-                                             message=f'Сайты кончились.\n',
-                                             random_id=random.randint(0, 2 ** 64))
-                            self.reset_search(vk)
-
-                    if self.results:
-                        self.send_result(vk)
+                elif payload == '1':
+                    a = self.send_result(vk)
+                    if not a:
+                        vk.messages.send(user_id=self.user_id,
+                                         message=f'Результаты кончились.\n'
+                                                 f'2 - Продолжить поиск на другом сайте\n'
+                                                 f'3 - Закончить поиск по запросу  "{self.search_text}"',
+                                         random_id=random.randint(0, 2 ** 64))
+                elif payload == '2':
+                    self.current_parser += 1
+                    if self.current_parser > len(parsers):
+                        vk.messages.send(user_id=self.user_id,
+                                         message=f'Сайты кончились.\n',
+                                         random_id=random.randint(0, 2 ** 64))
+                        self.reset_search(vk)
+                    else:
+                        self.first_parse(vk)
             else:
                 self.reset_search(vk)
                 self.search_text = text
-
-                while not self.parse(vk):
-                    self.current_parser += 1
-                    if self.current_parser > len(parsers):
-                        break
-
-                if self.results:
-                    self.send_result(vk)
+                self.first_parse(vk)
 
 
 def main():
@@ -232,4 +266,5 @@ def main():
 
 
 if __name__ == '__main__':
+    clear_folders()
     main()

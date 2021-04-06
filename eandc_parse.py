@@ -23,7 +23,8 @@ def eandc_parse(part_name: str, results_count: int = RESULTS_COUNT):
         print('Найдено 0 результатов.\nПоиск завершён.')
         return []
 
-    results = soup.find_all('a', class_='desc_name')
+    table = soup.find('div', class_='display_table')
+    results = table.find_all('a', class_='desc_name')
     results = list(map(lambda x: str(x)[str(x).find('href') + 7:], results))
     results = list(map(lambda x: str(x)[:str(x).find('"')], results))
 
@@ -62,10 +63,11 @@ def eandc_parse(part_name: str, results_count: int = RESULTS_COUNT):
 
             if image:
                 response = requests.get(f'https://eandc.ru/{image}', headers=headers)
-                with open(f'data/images/eandc_imgs/{name}_img.{image[-3:]}', 'wb') as out_img:
+                with open(f'data/images/eandc_imgs/{name.replace("/", "_")}_img.{image[-3:]}', 'wb') as out_img:
                     out_img.write(response.content)
                     # print(f'Получено изображение {name}_img{i + 1}.{url[-3:]}')
-                    all_results[-1]['images'].append(f'data/images/eandc_imgs/{name}_img.{image[-3:]}')
+                    all_results[-1]['images'].append(
+                        f'data/images/eandc_imgs/{name.replace("/", "_")}_img.{image[-3:]}')
                     out_img.close()
             if text:
                 all_results[-1]['text'] = text
