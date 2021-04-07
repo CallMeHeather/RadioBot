@@ -92,13 +92,13 @@ class UserDialog:
 
         vk.messages.send(user_id=self.user_id,
                          message=f'Привет.\n'
-                                 f'Я - радиобот, могу искать характеристики электронных компонентов по их названиям.\n'
+                                 f'Я - радиобот, могу искать характеристики электронных компонентов по их маркировке.\n'
                                  f'На данный момент в базе {len(parsers)} сайтов.\n'
                                  f'Отправьте название для поиска.\n'
                                  f'\n'
                                  f'Для более точного и быстрого поиска вводите маркировку вместе с буквенным индексом (Пример: КТ315Г)\n'
-                                 f'Поиск может занять какое-то время, наберитесь терпения.\n'
-                                 f'Если результаты поиска некорректны, попробуте поиск на другом сайте.\n'
+                                 f'Поиск может занять какое-то время.\n'
+                                 f'Если результаты поиска некорректны, попробуте поиск на другом сайте или проверьте, правильно ли введена маркировка компонента.\n'
                                  f'\n'
                                  f'BETA 0.0.3 НИЧЁ НЕ РАБОТАЕТ НОРМАЛЬНО',
                          random_id=random.randint(0, 2 ** 64))
@@ -160,13 +160,6 @@ class UserDialog:
         if result['text']:
             msg += '\n' + result['text']
 
-            # for i, text in enumerate(msg):
-            vk.messages.send(user_id=self.user_id,
-                             message=msg,
-                             random_id=random.randint(0, 2 ** 64),
-                             attachment=attachment)
-
-        # Просит ответа у пользователя
         kbd = eval(str(keyboard.get("keyboard")))
         kbd["buttons"][2][0]["action"]["label"] = f'Закончить поиск по запросу {self.search_text}'
         if self.current_parser + 1 > len(parsers):
@@ -175,12 +168,10 @@ class UserDialog:
             kbd["buttons"].pop(0)
 
         kbd = str(kbd).replace('True', 'true').replace('False', 'false').replace("'", '"')
-        print(kbd)
         vk.messages.send(user_id=self.user_id,
-                         message=f'1 - Следующий результат\n'
-                                 f'2 - Продолжить поиск на другом сайте\n'
-                                 f'3 - Закончить поиск по запросу  "{self.search_text}"',
+                         message=msg,
                          random_id=random.randint(0, 2 ** 64),
+                         attachment=attachment,
                          keyboard=kbd)
 
         self.state = 'wait_for_response'
@@ -266,5 +257,5 @@ def main():
 
 
 if __name__ == '__main__':
-    clear_folders()
+    # clear_folders()
     main()
