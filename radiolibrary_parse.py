@@ -8,7 +8,7 @@ def radiolibrary_parse(part_name: str, results_count: int = RESULTS_COUNT):
     all_results = []
 
     print(f'Поиск "{part_name}" на radiolibrary.ru...')
-    part_name = str(part_name.encode('ANSI')).replace('\\x', '%').upper()[2:-1]
+    part_name = str(part_name.encode('ansi')).replace('\\x', '%').upper()[2:-1]
 
     request = f'https://www.radiolibrary.ru/search.php?name={part_name}'
     headers = {
