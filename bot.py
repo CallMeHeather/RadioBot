@@ -147,15 +147,29 @@ class UserDialog:
         msg = f'Результат поиска: {result["name"]}\n' \
               f'Источник: {result["url"]}\n'
         attachment = ''
+
         if result['images']:
             photos = []
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:45.0) Gecko/20100101 Firefox/45.0',
+            }
             for image in result['images']:
-                with open(image, 'rb') as img:
+                response = requests.get(image, headers=headers)
+
+                with open(f'data/images/temp.{image[-3:]}', 'wb') as out_img:
+                    out_img.write(response.content)
+                with open(f'data/images/temp.{image[-3:]}', 'rb') as img:
                     a = photo_messages(vk, img, 0)
                     if a:
                         photos.append(a)
-                    img.close()
-                os.remove(image)
+                os.remove(f'data/images/temp.{image[-3:]}')
+
+                # with open(image, 'rb') as img:
+                #     a = photo_messages(vk, img, 0)
+                #     if a:
+                #         photos.append(a)
+                #     img.close()
+                # os.remove(image)
             attachment = ','.join([f'photo-{group_id}_{photo[0]["id"]}' for photo in photos])
         if result['text']:
             msg += '\n' + result['text']

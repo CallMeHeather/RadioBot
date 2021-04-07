@@ -25,8 +25,8 @@ def radiolibrary_parse(part_name: str, results_count: int = RESULTS_COUNT):
     results = list(map(lambda x: 'https://www.radiolibrary.ru/' + x, results))
 
     print(f'Найдено {len(results)} результатов.')
-    #print(*results, sep='\n')
-    #print()
+    # print(*results, sep='\n')
+    # print()
 
     for i, result_url in enumerate(results[:results_count]):
         print(f'Страница {i + 1}: '
@@ -67,16 +67,17 @@ def radiolibrary_parse(part_name: str, results_count: int = RESULTS_COUNT):
 
             if images:
                 for i, url in enumerate(images):
-                    response = requests.get(url, headers=headers)
-                    with open(f'data/images/radiolibrary_imgs/{name}_img{i + 1}.{url[-3:]}', 'wb') as out_img:
-                        out_img.write(response.content)
-                        #print(f'Получено изображение {name}_img{i + 1}.{url[-3:]}')
-                        all_results[-1]['images'].append(f'data/images/radiolibrary_imgs/{name}_img{i + 1}.{url[-3:]}')
-                        out_img.close()
+                    # response = requests.get(url, headers=headers)
+                    # with open(f'data/images/radiolibrary_imgs/{name}_img{i + 1}.{url[-3:]}', 'wb') as out_img:
+                    #     out_img.write(response.content)
+                    #     #print(f'Получено изображение {name}_img{i + 1}.{url[-3:]}')
+                    #     all_results[-1]['images'].append(f'data/images/radiolibrary_imgs/{name}_img{i + 1}.{url[-3:]}')
+                    #     out_img.close()
+                    all_results[-1]['images'].append(url)
             if text:
                 all_results[-1]['text'] = '\n\n'.join(data)
 
-    #print()
+    # print()
     print('Поиск завершён.\n')
     return all_results
 

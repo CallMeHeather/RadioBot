@@ -62,13 +62,14 @@ def eandc_parse(part_name: str, results_count: int = RESULTS_COUNT):
             all_results[-1]['name'] = name
 
             if image:
-                response = requests.get(f'https://eandc.ru/{image}', headers=headers)
-                with open(f'data/images/eandc_imgs/{name.replace("/", "_")}_img.{image[-3:]}', 'wb') as out_img:
-                    out_img.write(response.content)
-                    # print(f'Получено изображение {name}_img{i + 1}.{url[-3:]}')
-                    all_results[-1]['images'].append(
-                        f'data/images/eandc_imgs/{name.replace("/", "_")}_img.{image[-3:]}')
-                    out_img.close()
+                # response = requests.get(f'https://eandc.ru/{image}', headers=headers)
+                # with open(f'data/images/eandc_imgs/{name.replace("/", "_")}_img.{image[-3:]}', 'wb') as out_img:
+                #     out_img.write(response.content)
+                #     # print(f'Получено изображение {name}_img{i + 1}.{url[-3:]}')
+                #     all_results[-1]['images'].append(
+                #         f'data/images/eandc_imgs/{name.replace("/", "_")}_img.{image[-3:]}')
+                #     out_img.close()
+                all_results[-1]["images"].append(f'https://eandc.ru/{image}')
             if text:
                 all_results[-1]['text'] = text
 
