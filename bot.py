@@ -156,13 +156,13 @@ class UserDialog:
             for image in result['images']:
                 response = requests.get(image, headers=headers)
 
-                with open(f'data/images/temp.{image[-3:]}', 'wb') as out_img:
+                with open(f'temp.{image[-3:]}', 'wb') as out_img:
                     out_img.write(response.content)
-                with open(f'data/images/temp.{image[-3:]}', 'rb') as img:
+                with open(f'temp.{image[-3:]}', 'rb') as img:
                     a = photo_messages(vk, img, 0)
                     if a:
                         photos.append(a)
-                os.remove(f'data/images/temp.{image[-3:]}')
+                os.remove(f'temp.{image[-3:]}')
 
                 # with open(image, 'rb') as img:
                 #     a = photo_messages(vk, img, 0)
