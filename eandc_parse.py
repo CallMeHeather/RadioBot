@@ -8,7 +8,7 @@ def eandc_parse(part_name: str, results_count: int = RESULTS_COUNT):
     all_results = []
 
     print(f'Поиск "{part_name}" на eandc.ru...')
-    part_name = str(part_name.encode('ansi')).replace('\\x', '%').upper()[2:-1]
+    part_name = str(part_name.encode('cp1251')).replace('\\x', '%').upper()[2:-1]
 
     request = f'https://eandc.ru/catalog/?q={part_name}'
     headers = {
