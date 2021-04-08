@@ -6,7 +6,7 @@ app = Flask(__name__)
 
 @app.route("/")
 def index():
-    return "Привет от приложения Flask"
+    return '<a href="https://vk.com/public203010669">тык</a>'
 
 
 if __name__ == '__main__':
