@@ -254,6 +254,7 @@ class UserDialog:
 
 
 def main():
+    print('bot started')
     vk_session = vk_api.VkApi(token=TOKEN)
     longpoll = VkBotLongPoll(vk_session, group_id)
     dialogs = {}
