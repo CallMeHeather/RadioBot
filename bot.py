@@ -133,7 +133,8 @@ class UserDialog:
             vk.messages.send(user_id=self.user_id,
                              message=f'{exc}\n'
                                      f'\n'
-                                     f'Произошла непредвиденная ошибка при поиске.\n',
+                                     f'Произошла непредвиденная ошибка.\n'
+                                     f'Напишите админу: https://vk.com/id248634193',
                              random_id=random.randint(0, 2 ** 64))
             return False
         return True
@@ -143,52 +144,60 @@ class UserDialog:
             result = self.results.pop(0)
         else:
             return False
+        try:
+            msg = f'Результат поиска: {result["name"]}\n' \
+                  f'Источник: {result["url"]}\n'
+            attachment = ''
 
-        msg = f'Результат поиска: {result["name"]}\n' \
-              f'Источник: {result["url"]}\n'
-        attachment = ''
+            if result['images']:
+                photos = []
+                headers = {
+                    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:45.0) Gecko/20100101 Firefox/45.0',
+                }
+                for image in result['images']:
+                    response = requests.get(image, headers=headers)
 
-        if result['images']:
-            photos = []
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:45.0) Gecko/20100101 Firefox/45.0',
-            }
-            for image in result['images']:
-                response = requests.get(image, headers=headers)
+                    with open(f'temp.{image[-3:]}', 'wb') as out_img:
+                        out_img.write(response.content)
+                    with open(f'temp.{image[-3:]}', 'rb') as img:
+                        a = photo_messages(vk, img, 0)
+                        if a:
+                            photos.append(a)
+                    os.remove(f'temp.{image[-3:]}')
 
-                with open(f'temp.{image[-3:]}', 'wb') as out_img:
-                    out_img.write(response.content)
-                with open(f'temp.{image[-3:]}', 'rb') as img:
-                    a = photo_messages(vk, img, 0)
-                    if a:
-                        photos.append(a)
-                os.remove(f'temp.{image[-3:]}')
+                    # with open(image, 'rb') as img:
+                    #     a = photo_messages(vk, img, 0)
+                    #     if a:
+                    #         photos.append(a)
+                    #     img.close()
+                    # os.remove(image)
+                attachment = ','.join([f'photo-{group_id}_{photo[0]["id"]}' for photo in photos])
+            if result['text']:
+                msg += '\n' + result['text']
 
-                # with open(image, 'rb') as img:
-                #     a = photo_messages(vk, img, 0)
-                #     if a:
-                #         photos.append(a)
-                #     img.close()
-                # os.remove(image)
-            attachment = ','.join([f'photo-{group_id}_{photo[0]["id"]}' for photo in photos])
-        if result['text']:
-            msg += '\n' + result['text']
+            kbd = eval(str(keyboard.get("keyboard")))
+            kbd["buttons"][2][0]["action"]["label"] = f'Закончить поиск по запросу {self.search_text}'
+            if self.current_parser + 1 > len(parsers):
+                kbd["buttons"].pop(1)
+            if not self.results:
+                kbd["buttons"].pop(0)
 
-        kbd = eval(str(keyboard.get("keyboard")))
-        kbd["buttons"][2][0]["action"]["label"] = f'Закончить поиск по запросу {self.search_text}'
-        if self.current_parser + 1 > len(parsers):
-            kbd["buttons"].pop(1)
-        if not self.results:
-            kbd["buttons"].pop(0)
+            kbd = str(kbd).replace('True', 'true').replace('False', 'false').replace("'", '"')
+            vk.messages.send(user_id=self.user_id,
+                             message=msg,
+                             random_id=random.randint(0, 2 ** 64),
+                             attachment=attachment,
+                             keyboard=kbd)
 
-        kbd = str(kbd).replace('True', 'true').replace('False', 'false').replace("'", '"')
-        vk.messages.send(user_id=self.user_id,
-                         message=msg,
-                         random_id=random.randint(0, 2 ** 64),
-                         attachment=attachment,
-                         keyboard=kbd)
-
-        self.state = 'wait_for_response'
+            self.state = 'wait_for_response'
+        except Exception as exc:
+            vk.messages.send(user_id=self.user_id,
+                             message=f'{exc}\n'
+                                     f'\n'
+                                     f'Произошла непредвиденная ошибка.\n'
+                                     f'Напишите админу: https://vk.com/id248634193',
+                             random_id=random.randint(0, 2 ** 64))
+            return False
         return True
 
     def first_parse(self, vk):
