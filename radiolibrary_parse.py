@@ -55,7 +55,7 @@ def radiolibrary_parse(part_name: str, results_count: int = RESULTS_COUNT):
         images = soup.find_all('img')
         images = list(filter(lambda x: 'reference' in str(x), images))
         images = list(map(lambda x: str(x)[str(x).find('src') + 5:-3], images))
-        images = list(map(lambda x: 'https://www.radiolibrary.ru' + x, images))
+        images = list(map(lambda x: 'https://www.radiolibrary.ru/' + x, images))
 
         if images or text:
             all_results.append({'url': None,
@@ -83,5 +83,5 @@ def radiolibrary_parse(part_name: str, results_count: int = RESULTS_COUNT):
 
 
 if __name__ == '__main__':
-    part_name = 'кт3157'
+    part_name = 'Д213б'
     radiolibrary_parse(part_name)
