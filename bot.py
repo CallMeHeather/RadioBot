@@ -16,7 +16,6 @@ group_id = 203010669
 parsers = {
     2: (2, radiolibrary_parse, 'radiolibrary.ru'),
     1: (1, eandc_parse, 'eandc.ru'),
-    # 2: (2, shematok_parse, 'shematok.ru')
 }
 
 keyboard = {
@@ -109,14 +108,6 @@ keyboard = {
 
 def make_keyboard_json(keyboard):
     return str(keyboard).replace('True', 'true').replace('False', 'false').replace("'", '"')
-
-
-def clear_folders():
-    os.chdir(os.path.join('data', 'images'))
-    for folder in os.listdir(os.getcwd()):
-        for file in os.listdir(os.path.join(os.getcwd(), folder)):
-            os.remove(os.path.join(os.getcwd(), folder, file))
-    os.chdir('..')
 
 
 def photo_messages(vk, photo, peer_id=0):
@@ -366,7 +357,6 @@ def main():
 
     for event in longpoll.listen():
         if event.type == VkBotEventType.MESSAGE_NEW:
-            print(event.type)
             vk = vk_session.get_api()
             sender = vk.users.get(user_id=event.obj.message['from_id'])[0]
             message = event.obj.message
@@ -378,5 +368,4 @@ def main():
 
 
 if __name__ == '__main__':
-    # clear_folders()
     main()
