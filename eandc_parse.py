@@ -20,7 +20,7 @@ def eandc_parse(part_name: str, results_count: int = RESULTS_COUNT):
     soup = BeautifulSoup(text, features='lxml')
 
     if soup.find(text='Сожалеем, но ничего не найдено.'):
-        print('Найдено 0 результатов.\nПоиск завершён.')
+        print('Найдено 0 результатов. Поиск завершён.')
         return []
 
     table = soup.find('div', class_='display_table')
@@ -30,7 +30,7 @@ def eandc_parse(part_name: str, results_count: int = RESULTS_COUNT):
 
     print(f'Найдено {len(results)} результатов.')
 
-    for i, result_url in enumerate(results[:results_count]):
+    for i, result_url in enumerate(results[:results_count] if results_count < len(results) else results):
         result_url = f'https://eandc.ru/{result_url}'
         print(f'Страница {i + 1}: '
               f'{result_url}')

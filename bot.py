@@ -55,8 +55,60 @@ keyboard = {
 
             ],
         "inline": False
-    }
+    },
+    "start": {
+        "one_time": True,
+        "buttons":
+            [
+                [{
+                    "action":
+                        {
+                            "type": "text",
+                            "label": "Настройки",
+                            "payload": "4"
+                        },
+                    "color": "primary"
+
+                }]
+            ],
+        "inline": False
+    },
+    "settings": {
+        "one_time": True,
+        "buttons":
+            [
+                [{
+                    "action":
+                        {
+                            "type": "text",
+                            "label": "Кол-во результатов поиска",
+                            "payload": "5"
+                        },
+                    "color": "secondary"
+                }],
+                [{
+                    "action":
+                        {
+                            "type": "text",
+                            "label": "Назад",
+                            "payload": "6"
+                        },
+                    "color": "primary"
+
+                }]
+            ],
+        "inline": False
+    },
+    "empty": {
+        "one_time": True,
+        "buttons": [],
+        "inline": False
+    },
 }
+
+
+def make_keyboard_json(keyboard):
+    return str(keyboard).replace('True', 'true').replace('False', 'false').replace("'", '"')
 
 
 def clear_folders():
@@ -86,9 +138,11 @@ class UserDialog:
         self.user_id = user_id
         self.current_parser = 1
         self.current_result = -1
+        self.results_count = 5
         self.search_text = ''
         self.results = []
-        self.state = 'wait_for_request'  # 'wait_for_response'
+        self.next_call = None
+        self.state = 'idle'  # 'wait_for_response'
 
         vk.messages.send(user_id=self.user_id,
                          message=f'Привет.\n'
@@ -101,17 +155,43 @@ class UserDialog:
                                  f'Если результаты поиска некорректны, попробуте поиск на другом сайте или проверьте, правильно ли введена маркировка компонента.\n'
                                  f'\n'
                                  f'BETA 0.4 НИЧЁ НЕ РАБОТАЕТ НОРМАЛЬНО',
-                         random_id=random.randint(0, 2 ** 64))
+                         random_id=random.randint(0, 2 ** 64),
+                         keyboard=make_keyboard_json(keyboard.get("start")))
+
+    def set_results_count(self, vk, message):
+        try:
+            a = int(message["text"])
+            if a == -1:
+                self.results_count = 999
+                vk.messages.send(user_id=self.user_id,
+                                 message=f'Будут выводиться все результаты.',
+                                 random_id=random.randint(0, 2 ** 64))
+                return True
+            elif a < 1:
+                raise ValueError
+            else:
+                self.results_count = a
+                vk.messages.send(user_id=self.user_id,
+                                 message=f'Установлено число выводимых результатов поиска: {self.results_count}',
+                                 random_id=random.randint(0, 2 ** 64))
+                return True
+        except ValueError:
+            vk.messages.send(user_id=self.user_id,
+                             message=f'Число результатов должно быть int >= 1',
+                             random_id=random.randint(0, 2 ** 64))
+            return False
 
     def reset_search(self, vk):
-        self.state = 'wait_for_request'
+        self.state = 'idle'
         self.current_parser = 1
         self.current_result = 0
         self.results = []
-        vk.messages.send(user_id=self.user_id,
-                         message=f'Поиск по запросу  "{self.search_text}"  завершён.\n'
-                                 f'Введите название элемента, чтобы начать поиск.',
-                         random_id=random.randint(0, 2 ** 64))
+        if self.search_text:
+            vk.messages.send(user_id=self.user_id,
+                             message=f'Поиск по запросу  "{self.search_text}"  завершён.\n'
+                                     f'Введите название элемента, чтобы начать поиск.',
+                             random_id=random.randint(0, 2 ** 64),
+                             keyboard=make_keyboard_json(keyboard.get("start")))
 
     def parse(self, vk):
         try:
@@ -121,7 +201,7 @@ class UserDialog:
                              message=f'Поиск  "{self.search_text}"  на {site_url}...',
                              random_id=random.randint(0, 2 ** 64),
                              dont_parse_links=True)
-            self.results = parser(self.search_text)
+            self.results = parser(self.search_text, self.results_count)
 
             # Если результатов нет, то идёт на другой сайт
             if not self.results:
@@ -178,12 +258,13 @@ class UserDialog:
 
             kbd = eval(str(keyboard.get("keyboard")))
             kbd["buttons"][2][0]["action"]["label"] = f'Закончить поиск по запросу {self.search_text}'
+            kbd["buttons"][0][0]["action"]["label"] = f'Следующий результат ({len(self.results)})'
             if self.current_parser + 1 > len(parsers):
                 kbd["buttons"].pop(1)
             if not self.results:
                 kbd["buttons"].pop(0)
 
-            kbd = str(kbd).replace('True', 'true').replace('False', 'false').replace("'", '"')
+            kbd = make_keyboard_json(kbd)
             vk.messages.send(user_id=self.user_id,
                              message=msg,
                              random_id=random.randint(0, 2 ** 64),
@@ -223,24 +304,11 @@ class UserDialog:
                              message='Отправьте мне корректное название радиоэлемента для поиска.',
                              random_id=random.randint(0, 2 ** 64))
             return None
-        if self.state == 'wait_for_request':
-            self.search_text = text
-
-            while not self.parse(vk):
-                self.current_parser += 1
-                if self.current_parser > len(parsers):
+        if self.state in ('idle', 'wait_for_response'):
+            if "payload" in message:
+                if message["payload"] == '3':
                     self.reset_search(vk)
-                    break
-
-            if self.results:
-                self.send_result(vk)
-
-        elif self.state == 'wait_for_response':
-            if "payload" in message.keys():
-                payload = message["payload"]
-                if payload == '3':
-                    self.reset_search(vk)
-                elif payload == '1':
+                elif message["payload"] == '1':
                     a = self.send_result(vk)
                     if not a:
                         vk.messages.send(user_id=self.user_id,
@@ -248,7 +316,7 @@ class UserDialog:
                                                  f'2 - Продолжить поиск на другом сайте\n'
                                                  f'3 - Закончить поиск по запросу  "{self.search_text}"',
                                          random_id=random.randint(0, 2 ** 64))
-                elif payload == '2':
+                elif message["payload"] == '2':
                     self.current_parser += 1
                     if self.current_parser > len(parsers):
                         vk.messages.send(user_id=self.user_id,
@@ -257,22 +325,50 @@ class UserDialog:
                         self.reset_search(vk)
                     else:
                         self.first_parse(vk)
+                elif message["payload"] == "4":  # Настройки
+                    kbd = eval(str(keyboard.get("settings")))
+                    kbd["buttons"][0][0]["action"][
+                        "label"] = f'Кол-во результатов поиска (текущ.: {self.results_count})'
+                    vk.messages.send(user_id=self.user_id,
+                                     message=f'Вы вошли в настройки.',
+                                     random_id=random.randint(0, 2 ** 64),
+                                     keyboard=make_keyboard_json(kbd))
+                elif message["payload"] == "5":
+                    vk.messages.send(user_id=self.user_id,
+                                     message=f'Текущее количество выводимых результатов: {self.results_count}\n'
+                                             f'Введите необходимое значение или -1, чтобы выводить все.',
+                                     random_id=random.randint(0, 2 ** 64))
+                    self.state = 'waiting_for_results_count'
+                elif message["payload"] == "6":
+                    vk.messages.send(user_id=self.user_id,
+                                     message=f'Вы вышли из настроек.',
+                                     random_id=random.randint(0, 2 ** 64),
+                                     keyboard=make_keyboard_json(keyboard.get("start")))
             else:
                 self.reset_search(vk)
                 self.search_text = text
                 self.first_parse(vk)
+        elif self.state == 'waiting_for_results_count':
+            if self.set_results_count(vk, message):
+                self.state = 'idle'
+                kbd = eval(str(keyboard.get("settings")))
+                kbd["buttons"][0][0]["action"]["label"] = f'Кол-во результатов поиска (текущ.: {self.results_count})'
+                vk.messages.send(user_id=self.user_id,
+                                 message=f'Вы в настройках.',
+                                 random_id=random.randint(0, 2 ** 64),
+                                 keyboard=make_keyboard_json(kbd))
 
 
 def main():
-    print('bot started')
     vk_session = vk_api.VkApi(token=TOKEN)
     longpoll = VkBotLongPoll(vk_session, group_id)
     dialogs = {}
 
     for event in longpoll.listen():
         if event.type == VkBotEventType.MESSAGE_NEW:
+            print(event.type)
             vk = vk_session.get_api()
-            sender = vk.users.get(user_id=event.obj.message['from_id'], fields='city')[0]
+            sender = vk.users.get(user_id=event.obj.message['from_id'])[0]
             message = event.obj.message
 
             if sender['id'] not in dialogs:

@@ -28,7 +28,7 @@ def radiolibrary_parse(part_name: str, results_count: int = RESULTS_COUNT):
     # print(*results, sep='\n')
     # print()
 
-    for i, result_url in enumerate(results[:results_count]):
+    for i, result_url in enumerate(results[:results_count] if results_count < len(results) else results):
         print(f'Страница {i + 1}: '
               f'{result_url}')
 
