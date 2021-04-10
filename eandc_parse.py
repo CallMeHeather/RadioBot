@@ -51,7 +51,8 @@ def eandc_parse(part_name: str, results_count: int = RESULTS_COUNT):
         if pdf_link:
             pdf_link = pdf_link[pdf_link.find('href') + 7:]
             pdf_link = pdf_link[:pdf_link.find('"')]
-            text += f'\n\nСсылка на pdf с datasheetом: https://eandc.ru/{pdf_link}'
+            if pdf_link:
+                text += f'\n\nСсылка на pdf с datasheetом: https://eandc.ru/{pdf_link}'
 
         if image or text:
             all_results.append({'url': None,

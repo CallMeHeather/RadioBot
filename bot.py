@@ -66,7 +66,17 @@ keyboard = {
                             "label": "Настройки",
                             "payload": "4"
                         },
-                    "color": "primary"
+                    "color": "secondary"
+
+                }],
+                [{
+                    "action":
+                        {
+                            "type": "text",
+                            "label": "Помощь",
+                            "payload": "7"
+                        },
+                    "color": "secondary"
 
                 }]
             ],
@@ -179,8 +189,8 @@ class UserDialog:
         self.results = []
         if self.search_text:
             vk.messages.send(user_id=self.user_id,
-                             message=f'Поиск по запросу  "{self.search_text}"  завершён.\n'
-                                     f'Введите название элемента, чтобы начать поиск.',
+                             message=f'Поиск по запросу  "{self.search_text}"  завершён.\n',
+                             # f'Введите название элемента, чтобы начать поиск.',
                              random_id=random.randint(0, 2 ** 64),
                              keyboard=make_keyboard_json(keyboard.get("start")))
 
@@ -260,7 +270,8 @@ class UserDialog:
                              message=msg,
                              random_id=random.randint(0, 2 ** 64),
                              attachment=attachment,
-                             keyboard=kbd)
+                             keyboard=kbd,
+                             dont_parse_links=True)
 
             self.state = 'wait_for_response'
         except Exception as exc:
@@ -268,7 +279,7 @@ class UserDialog:
                              message=f'{exc}\n'
                                      f'\n'
                                      f'Произошла непредвиденная ошибка.\n'
-                                     f'Напишите админу: https://vk.com/id248634193',
+                                     f'Отправьте скриншот переписки сюда: https://vk.com/topic-203010669_47477651',
                              random_id=random.randint(0, 2 ** 64))
             return False
         return True
@@ -292,7 +303,7 @@ class UserDialog:
         # Пустое сообщение
         if not text:
             vk.messages.send(user_id=self.user_id,
-                             message='Отправьте мне корректное название радиоэлемента для поиска.',
+                             message='Отправьте мне корректную маркировку радиоэлемента для поиска.',
                              random_id=random.randint(0, 2 ** 64))
             return None
         if self.state in ('idle', 'wait_for_response'):
@@ -324,30 +335,40 @@ class UserDialog:
                                      message=f'Вы вошли в настройки.',
                                      random_id=random.randint(0, 2 ** 64),
                                      keyboard=make_keyboard_json(kbd))
-                elif message["payload"] == "5":
+                elif message["payload"] == "5":  # Кол-во результатов
                     vk.messages.send(user_id=self.user_id,
                                      message=f'Текущее количество выводимых результатов: {self.results_count}\n'
                                              f'Введите необходимое значение или -1, чтобы выводить все.',
                                      random_id=random.randint(0, 2 ** 64))
                     self.state = 'waiting_for_results_count'
-                elif message["payload"] == "6":
+                elif message["payload"] == "6":  # Выход из настроек
                     vk.messages.send(user_id=self.user_id,
                                      message=f'Вы вышли из настроек.',
                                      random_id=random.randint(0, 2 ** 64),
                                      keyboard=make_keyboard_json(keyboard.get("start")))
-            else:
-                self.reset_search(vk)
-                self.search_text = text
-                self.first_parse(vk)
-        elif self.state == 'waiting_for_results_count':
-            if self.set_results_count(vk, message):
-                self.state = 'idle'
-                kbd = eval(str(keyboard.get("settings")))
-                kbd["buttons"][0][0]["action"]["label"] = f'Кол-во результатов поиска (текущ.: {self.results_count})'
-                vk.messages.send(user_id=self.user_id,
-                                 message=f'Вы в настройках.',
-                                 random_id=random.randint(0, 2 ** 64),
-                                 keyboard=make_keyboard_json(kbd))
+                elif message["payload"] == "7":  # Помощь
+                    vk.messages.send(user_id=self.user_id,
+                                     message='Для начала поиска введите маркировку радиоэлемента.\n'
+                                             'Для более точного и быстрого поиска вводите маркировку вместе с буквенным индексом (Пример: КТ315Г, КТ819ГМ, Д226Б).\n'
+                                             'Поиск может занять какое-то время. Если поиск идёт слишком долго, попробуйте уменьшить кол-во выводимых результатов в настройках.'
+                                             'Если результаты поиска некорректны, попробуте поиск на другом сайте или проверьте, правильно ли введена маркировка компонента.\n'
+                                             '\n',
+                                     random_id=random.randint(0, 2 ** 64),
+                                     keyboard=make_keyboard_json(keyboard.get("start")))
+                else:
+                    self.reset_search(vk)
+                    self.search_text = text
+                    self.first_parse(vk)
+            elif self.state == 'waiting_for_results_count':
+                if self.set_results_count(vk, message):
+                    self.state = 'idle'
+                    kbd = eval(str(keyboard.get("settings")))
+                    kbd["buttons"][0][0]["action"][
+                        "label"] = f'Кол-во результатов поиска (текущ.: {self.results_count})'
+                    vk.messages.send(user_id=self.user_id,
+                                     message=f'Вы в настройках.',
+                                     random_id=random.randint(0, 2 ** 64),
+                                     keyboard=make_keyboard_json(kbd))
 
 
 def main():
