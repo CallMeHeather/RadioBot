@@ -350,25 +350,24 @@ class UserDialog:
                     vk.messages.send(user_id=self.user_id,
                                      message='Для начала поиска введите маркировку радиоэлемента.\n'
                                              'Для более точного и быстрого поиска вводите маркировку вместе с буквенным индексом (Пример: КТ315Г, КТ819ГМ, Д226Б).\n'
-                                             'Поиск может занять какое-то время. Если поиск идёт слишком долго, попробуйте уменьшить кол-во выводимых результатов в настройках.'
-                                             'Если результаты поиска некорректны, попробуте поиск на другом сайте или проверьте, правильно ли введена маркировка компонента.\n'
-                                             '\n',
+                                             'Поиск может занять какое-то время. Если поиск идёт слишком долго, попробуйте уменьшить кол-во выводимых результатов в настройках.\n'
+                                             'Если результаты поиска некорректны, попробуте поиск на другом сайте или проверьте, правильно ли введена маркировка компонента.\n',
                                      random_id=random.randint(0, 2 ** 64),
                                      keyboard=make_keyboard_json(keyboard.get("start")))
-                else:
-                    self.reset_search(vk)
-                    self.search_text = text
-                    self.first_parse(vk)
-            elif self.state == 'waiting_for_results_count':
-                if self.set_results_count(vk, message):
-                    self.state = 'idle'
-                    kbd = eval(str(keyboard.get("settings")))
-                    kbd["buttons"][0][0]["action"][
-                        "label"] = f'Кол-во результатов поиска (текущ.: {self.results_count})'
-                    vk.messages.send(user_id=self.user_id,
-                                     message=f'Вы в настройках.',
-                                     random_id=random.randint(0, 2 ** 64),
-                                     keyboard=make_keyboard_json(kbd))
+            else:
+                self.reset_search(vk)
+                self.search_text = text
+                self.first_parse(vk)
+        elif self.state == 'waiting_for_results_count':
+            if self.set_results_count(vk, message):
+                self.state = 'idle'
+                kbd = eval(str(keyboard.get("settings")))
+                kbd["buttons"][0][0]["action"][
+                    "label"] = f'Кол-во результатов поиска (текущ.: {self.results_count})'
+                vk.messages.send(user_id=self.user_id,
+                                 message=f'Вы в настройках.',
+                                 random_id=random.randint(0, 2 ** 64),
+                                 keyboard=make_keyboard_json(kbd))
 
 
 def main():
