@@ -9,6 +9,7 @@ from shematok_parse import shematok_parse
 from joyta_parse import joyta_parse
 from radiolibrary_parse import radiolibrary_parse
 from eandc_parse import eandc_parse
+from alldatasheet_parse import alldatasheet_parse
 
 TOKEN = 'd034eacf55b685f35ec2b825304d1e705080c129359983d40ce469629f66c0eb20eaef6833987876315ba'
 group_id = 203010669
@@ -16,6 +17,7 @@ group_id = 203010669
 parsers = {
     2: (2, radiolibrary_parse, 'radiolibrary.ru'),
     1: (1, eandc_parse, 'eandc.ru'),
+    3: (3, alldatasheet_parse, 'www.alldatasheet.com')
 }
 
 keyboard = {
