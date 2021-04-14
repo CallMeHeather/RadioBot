@@ -2,7 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 
 
-def alldatasheet_parse(part_name: str):
+def alldatasheet_parse(part_name: str, *args, **kwargs):
     all_results = []
 
     print(f'Поиск "{part_name}" на alldatasheet.com...')
