@@ -5,6 +5,11 @@ from bs4 import BeautifulSoup
 def alldatasheet_parse(part_name: str, *args, **kwargs):
     all_results = []
 
+    alphabet = {"а", "б", "в", "г", "д", "е", "ё", "ж", "з", "и", "й", "к", "л", "м", "н", "о",
+                "п", "р", "с", "т", "у", "ф", "х", "ц", "ч", "ш", "щ", "ъ", "ы", "ь", "э", "ю", "я"}
+    if bool(alphabet.intersection(set(part_name.lower()))):
+        return None
+
     print(f'Поиск "{part_name}" на alldatasheet.com...')
     # part_name = str(part_name.encode('cp1251')).replace('\\x', '%').upper()[2:-1]
 
@@ -51,7 +56,7 @@ def alldatasheet_parse(part_name: str, *args, **kwargs):
     all_results[-1]['text'] = all_text
 
     print('Поиск завершён.\n')
-    print(all_text)
+    # print(all_text)
     return all_results
 
 

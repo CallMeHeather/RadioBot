@@ -5,8 +5,6 @@ import os
 import requests
 from vk_api.upload import FilesOpener
 
-from shematok_parse import shematok_parse
-from joyta_parse import joyta_parse
 from radiolibrary_parse import radiolibrary_parse
 from eandc_parse import eandc_parse
 from alldatasheet_parse import alldatasheet_parse
@@ -117,6 +115,17 @@ keyboard = {
     },
 }
 
+greeting_message = f'Привет.\n' \
+                   f'Я - радиобот, могу искать характеристики электронных компонентов по их маркировке.\n' \
+                   f'На данный момент в базе {len(parsers)} сайтов.\n' \
+                   f'Отправьте название для поиска.\n' \
+                   f'\n' \
+                   f'Для более точного и быстрого поиска вводите маркировку вместе с буквенным индексом (Пример: КТ315Г)\n' \
+                   f'Поиск может занять какое-то время.\n' \
+                   f'Если результаты поиска некорректны, попробуте поиск на другом сайте или проверьте, правильно ли введена маркировка компонента.\n' \
+                   f'\n' \
+                   f'BETA 0.9, возможны ошибки'
+
 
 def make_keyboard_json(keyboard):
     return str(keyboard).replace('True', 'true').replace('False', 'false').replace("'", '"')
@@ -132,12 +141,12 @@ def photo_messages(vk, photo, peer_id=0):
         return vk.photos.saveMessagesPhoto(photo=response['photo'],
                                            server=response['server'],
                                            hash=response['hash'])
-    except Exception as exc:
+    except Exception:
         pass
 
 
 class UserDialog:
-    def __init__(self, user_id, vk):
+    def __init__(self, user_id):
         self.user_id = user_id
         self.current_parser = 1
         self.current_result = -1
@@ -146,20 +155,6 @@ class UserDialog:
         self.results = []
         self.next_call = None
         self.state = 'idle'  # 'wait_for_response'
-
-        vk.messages.send(user_id=self.user_id,
-                         message=f'Привет.\n'
-                                 f'Я - радиобот, могу искать характеристики электронных компонентов по их маркировке.\n'
-                                 f'На данный момент в базе {len(parsers)} сайтов.\n'
-                                 f'Отправьте название для поиска.\n'
-                                 f'\n'
-                                 f'Для более точного и быстрого поиска вводите маркировку вместе с буквенным индексом (Пример: КТ315Г)\n'
-                                 f'Поиск может занять какое-то время.\n'
-                                 f'Если результаты поиска некорректны, попробуте поиск на другом сайте или проверьте, правильно ли введена маркировка компонента.\n'
-                                 f'\n'
-                                 f'BETA 0.4 НИЧЁ НЕ РАБОТАЕТ НОРМАЛЬНО',
-                         random_id=random.randint(0, 2 ** 64),
-                         keyboard=make_keyboard_json(keyboard.get("start")))
 
     def set_results_count(self, vk, message):
         try:
@@ -260,7 +255,10 @@ class UserDialog:
                 msg += '\n' + result['text']
 
             kbd = eval(str(keyboard.get("keyboard")))
-            kbd["buttons"][2][0]["action"]["label"] = f'Закончить поиск по запросу {self.search_text}'
+            kbd["buttons"][2][0]["action"]["label"] = f'Закончить поиск по запросу {self.search_text}' \
+                if len(f'Закончить поиск по запросу {self.search_text}') <= 40 else \
+                f'Закончить поиск по запросу {self.search_text}'[:37] + '...'
+
             kbd["buttons"][0][0]["action"]["label"] = f'Следующий результат ({len(self.results)})'
             if self.current_parser + 1 > len(parsers):
                 kbd["buttons"].pop(1)
@@ -310,7 +308,12 @@ class UserDialog:
             return None
         if self.state in ('idle', 'wait_for_response'):
             if "payload" in message:
-                if message["payload"] == '3':
+                if message["payload"] == '{"command":"start"}':
+                    vk.messages.send(user_id=self.user_id,
+                                     message=greeting_message,
+                                     random_id=random.randint(0, 2 ** 64),
+                                     keyboard=make_keyboard_json(keyboard.get("start")))
+                elif message["payload"] == '3':
                     self.reset_search(vk)
                 elif message["payload"] == '1':
                     a = self.send_result(vk)
@@ -356,6 +359,7 @@ class UserDialog:
                                              'Если результаты поиска некорректны, попробуте поиск на другом сайте или проверьте, правильно ли введена маркировка компонента.\n',
                                      random_id=random.randint(0, 2 ** 64),
                                      keyboard=make_keyboard_json(keyboard.get("start")))
+
             else:
                 self.reset_search(vk)
                 self.search_text = text
@@ -384,7 +388,8 @@ def main():
             message = event.obj.message
 
             if sender['id'] not in dialogs:
-                dialogs[sender['id']] = UserDialog(sender['id'], vk)
+                dialogs[sender['id']] = UserDialog(sender['id'])
+                dialogs[sender['id']].handle_message(message, vk)
             else:
                 dialogs[sender['id']].handle_message(message, vk)
 
