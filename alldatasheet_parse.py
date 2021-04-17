@@ -5,8 +5,8 @@ from bs4 import BeautifulSoup
 def alldatasheet_parse(part_name: str, *args, **kwargs):
     all_results = []
 
-    alphabet = 'abcdefghijklmnopqrstuvwxyz'
-    if not bool(set(alphabet).intersection(set(part_name.lower()))):
+    chars = 'abcdefghijklmnopqrstuvwxyz1234567890'
+    if not bool(set(chars).intersection(set(part_name.lower()))):
         return None
 
     print(f'Поиск "{part_name}" на alldatasheet.com...')
@@ -60,5 +60,5 @@ def alldatasheet_parse(part_name: str, *args, **kwargs):
 
 
 if __name__ == '__main__':
-    part_name = 'ne555'
+    part_name = '7805'
     alldatasheet_parse(part_name)

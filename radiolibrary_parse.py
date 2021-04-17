@@ -75,7 +75,7 @@ def radiolibrary_parse(part_name: str, results_count: int = RESULTS_COUNT):
                     #     out_img.close()
                     all_results[-1]['images'].append(url)
             if text:
-                all_results[-1]['text'] = '\n\n'.join(data)
+                all_results[-1]['text'] = '\n'.join(data)
 
     # print()
     print('Поиск завершён.\n')
@@ -83,5 +83,5 @@ def radiolibrary_parse(part_name: str, results_count: int = RESULTS_COUNT):
 
 
 if __name__ == '__main__':
-    part_name = 'Д213б'
+    part_name = '7805'
     radiolibrary_parse(part_name)
