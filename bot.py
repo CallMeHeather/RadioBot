@@ -243,13 +243,6 @@ class UserDialog:
                         if a:
                             photos.append(a)
                     os.remove(f'temp.{image[-3:]}')
-
-                    # with open(image, 'rb') as img:
-                    #     a = photo_messages(vk, img, 0)
-                    #     if a:
-                    #         photos.append(a)
-                    #     img.close()
-                    # os.remove(image)
                 attachment = ','.join([f'photo-{group_id}_{photo[0]["id"]}' for photo in photos])
             if result['text']:
                 msg += '\n' + result['text']

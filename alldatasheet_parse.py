@@ -32,9 +32,9 @@ def alldatasheet_parse(part_name: str, *args, **kwargs):
     for i, row in enumerate(rows):
         try:
             some_data = row.find_all('td')
-            # print(*some_data, sep='\n----------\n')
+            print(*some_data, sep='\n\n')
 
-            name = some_data[1].find('b').get_text()
+            name = some_data[1].get_text().strip()
 
             result_url = str(some_data[1])[str(some_data[1]).find('"') + 1:]
             result_url = result_url[2:result_url.find('"')]
@@ -61,5 +61,5 @@ def alldatasheet_parse(part_name: str, *args, **kwargs):
 
 
 if __name__ == '__main__':
-    part_name = 'irf9540'
+    part_name = 'SMF-3RDEA'
     alldatasheet_parse(part_name)
