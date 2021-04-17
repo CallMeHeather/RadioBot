@@ -190,6 +190,7 @@ class UserDialog:
                              # f'Введите название элемента, чтобы начать поиск.',
                              random_id=random.randint(0, 2 ** 64),
                              keyboard=make_keyboard_json(keyboard.get("start")))
+        self.search_text = ''
 
     def parse(self, vk):
         try:

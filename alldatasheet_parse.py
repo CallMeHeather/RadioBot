@@ -29,10 +29,10 @@ def alldatasheet_parse(part_name: str, *args, **kwargs):
     print(f'Найдено {len(rows)} результатов.')
 
     all_text = ''
-    for i, row in enumerate(rows):
+    for i, row in enumerate(rows[:10]):
         try:
             some_data = row.find_all('td')
-            print(*some_data, sep='\n\n')
+            # print(*some_data, sep='\n\n')
 
             name = some_data[1].get_text().strip()
 
