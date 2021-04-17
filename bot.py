@@ -163,7 +163,7 @@ class UserDialog:
                                  message=f'Будут выводиться все результаты.',
                                  random_id=random.randint(0, 2 ** 64))
                 return True
-            elif a < 1:
+            elif a < 1 or a > 999:
                 raise ValueError
             else:
                 self.results_count = a
@@ -173,7 +173,7 @@ class UserDialog:
                 return True
         except ValueError:
             vk.messages.send(user_id=self.user_id,
-                             message=f'Число результатов должно быть int >= 1',
+                             message=f'Число результатов должно быть 990 >= integer >= 1',
                              random_id=random.randint(0, 2 ** 64))
             return False
 
