@@ -26,6 +26,8 @@ def alldatasheet_parse(part_name: str, *args, **kwargs):
     rows = table_match.find_all('tr')[1:]
     # print(*rows, sep='\n----------------------------\n')
     print(f'Найдено {len(rows)} результатов.')
+    if not rows:
+        return None
 
     all_text = ''
     for i, row in enumerate(rows[:10]):
