@@ -26,6 +26,8 @@ def alldatasheet_parse(part_name: str, *args, **kwargs):
     rows = table_match.find_all('tr')[1:]
     # print(*rows, sep='\n----------------------------\n')
     print(f'Найдено {len(rows)} результатов.')
+    if not rows:
+        return None
 
     all_text = ''
     for i, row in enumerate(rows[:10]):
@@ -56,9 +58,12 @@ def alldatasheet_parse(part_name: str, *args, **kwargs):
 
     print('Поиск завершён.\n')
     # print(all_text)
+    if not all_text:
+        return None
     return all_results
 
 
 if __name__ == '__main__':
-    part_name = '7805'
-    alldatasheet_parse(part_name)
+    part_name = 'lm34'
+    a = alldatasheet_parse(part_name)
+    print(a)
