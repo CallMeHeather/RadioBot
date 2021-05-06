@@ -74,7 +74,7 @@ def tec_parse(part_name: str, results_count: int = RESULTS_COUNT):
                 if images:
                     all_results[-1]['images'] = images
                 if text:
-                    all_results[-1]['text'] = '\n'.join(text)
+                    all_results[-1]['text'] = text
         except Exception as exception:
             # print('Ощибка')
             # print(exception)
