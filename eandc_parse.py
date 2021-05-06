@@ -7,7 +7,7 @@ RESULTS_COUNT = 5
 def eandc_parse(part_name: str, results_count: int = RESULTS_COUNT):
     all_results = []
 
-    print(f'Поиск "{part_name}" на eandc.ru...')
+    # print(f'Поиск "{part_name}" на eandc.ru...')
     part_name = str(part_name.encode('cp1251')).replace('\\x', '%').upper()[2:-1]
 
     request = f'https://eandc.ru/catalog/?q={part_name}'
@@ -20,7 +20,7 @@ def eandc_parse(part_name: str, results_count: int = RESULTS_COUNT):
     soup = BeautifulSoup(text, features='lxml')
 
     if soup.find(text='Сожалеем, но ничего не найдено.'):
-        print('Найдено 0 результатов. Поиск завершён.')
+        # print('Найдено 0 результатов. Поиск завершён.')
         return []
 
     table = soup.find('div', class_='display_table')
@@ -28,12 +28,12 @@ def eandc_parse(part_name: str, results_count: int = RESULTS_COUNT):
     results = list(map(lambda x: str(x)[str(x).find('href') + 7:], results))
     results = list(map(lambda x: str(x)[:str(x).find('"')], results))
 
-    print(f'Найдено {len(results)} результатов.')
+    # print(f'Найдено {len(results)} результатов.')
 
     for i, result_url in enumerate(results[:results_count] if results_count < len(results) else results):
         result_url = f'https://eandc.ru/{result_url}'
-        print(f'Страница {i + 1}: '
-              f'{result_url}')
+        # print(f'Страница {i + 1}: '
+        #       f'{result_url}')
 
         response = requests.get(result_url, headers=headers)
         text = response.content
@@ -74,8 +74,8 @@ def eandc_parse(part_name: str, results_count: int = RESULTS_COUNT):
             if text:
                 all_results[-1]['text'] = text
 
-    print()
-    print('Поиск завершён.\n')
+    # print()
+    # print('Поиск завершён.\n')
     return all_results
 
 

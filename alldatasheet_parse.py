@@ -9,7 +9,7 @@ def alldatasheet_parse(part_name: str, *args, **kwargs):
     if not bool(set(chars).intersection(set(part_name.lower()))):
         return None
 
-    print(f'Поиск "{part_name}" на alldatasheet.com...')
+    # print(f'Поиск "{part_name}" на alldatasheet.com...')
     # part_name = str(part_name.encode('cp1251')).replace('\\x', '%').upper()[2:-1]
 
     request = f'https://www.alldatasheet.com/view_datasheet.jsp?Searchword={part_name}'
@@ -25,7 +25,7 @@ def alldatasheet_parse(part_name: str, *args, **kwargs):
     # print(table_match)
     rows = table_match.find_all('tr')[1:]
     # print(*rows, sep='\n----------------------------\n')
-    print(f'Найдено {len(rows)} результатов.')
+    # print(f'Найдено {len(rows)} результатов.')
     if not rows:
         return None
 
@@ -56,7 +56,7 @@ def alldatasheet_parse(part_name: str, *args, **kwargs):
     all_results[-1]['name'] = part_name
     all_results[-1]['text'] = all_text
 
-    print('Поиск завершён.\n')
+    # print('Поиск завершён.\n')
     # print(all_text)
     if not all_text:
         return None
@@ -66,4 +66,3 @@ def alldatasheet_parse(part_name: str, *args, **kwargs):
 if __name__ == '__main__':
     part_name = 'lm34'
     a = alldatasheet_parse(part_name)
-    print(a)

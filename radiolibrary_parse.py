@@ -7,7 +7,7 @@ RESULTS_COUNT = 5
 def radiolibrary_parse(part_name: str, results_count: int = RESULTS_COUNT):
     all_results = []
 
-    print(f'Поиск "{part_name}" на radiolibrary.ru...')
+    # print(f'Поиск "{part_name}" на radiolibrary.ru...')
     part_name = str(part_name.encode('cp1251')).replace('\\x', '%').upper()[2:-1]
 
     request = f'https://www.radiolibrary.ru/search.php?name={part_name}'
@@ -24,13 +24,13 @@ def radiolibrary_parse(part_name: str, results_count: int = RESULTS_COUNT):
     results = list(map(lambda x: x[:x.find('"')], results))
     results = list(map(lambda x: 'https://www.radiolibrary.ru/' + x, results))
 
-    print(f'Найдено {len(results)} результатов.')
+    # print(f'Найдено {len(results)} результатов.')
     # print(*results, sep='\n')
     # print()
 
     for i, result_url in enumerate(results[:results_count] if results_count < len(results) else results):
-        print(f'Страница {i + 1}: '
-              f'{result_url}')
+        # print(f'Страница {i + 1}: '
+        #       f'{result_url}')
 
         response = requests.get(result_url, headers=headers)
         text = response.content
@@ -78,7 +78,7 @@ def radiolibrary_parse(part_name: str, results_count: int = RESULTS_COUNT):
                 all_results[-1]['text'] = '\n'.join(data)
 
     # print()
-    print('Поиск завершён.\n')
+    # print('Поиск завершён.\n')
     return all_results
 
 
